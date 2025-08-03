@@ -7,5 +7,6 @@ type RemoteModule struct {
 	Repo     string `yaml:"repo" json:"repo"`
 	Tag      string `yaml:"tag" json:"tag"`
 
-	Auth *types.Selector `yaml:"auth,omitempty" json:"auth,omitempty"`
+	Auth      *types.Selector `yaml:"auth,omitempty" json:"auth,omitempty"`
+	PlainHTTP bool            `yaml:"plainHTTP,omitempty" json:"plainHTTP,omitempty"`
 }

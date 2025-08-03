@@ -23,7 +23,7 @@ type KRMInput struct {
 	// Input contains the KRM input specification.
 	Input        map[string]interface{} `yaml:"input" json:"input"`
 	Includes     []types.Selector       `yaml:"includes,omitempty" json:"includes,omitempty"`
-	RemoteModule RemoteModule           `yaml:"remoteModule,omitempty" json:"remoteModule,omitempty"`
+	RemoteModule *RemoteModule          `yaml:"remoteModule,omitempty" json:"remoteModule,omitempty"`
 }
 
 // ExtractIncludes populates the includes structure from the provided KRMInput and items.
@@ -63,9 +63,10 @@ func (i *KRMInput) IntoCueValue(ctx *cue.Context) (*cue.Value, error) {
 	return IntoCueValue(ctx, i.Input)
 }
 
-// GetRemoteAuth returns the authentication configuration for the remote module, if any.
-// If no authentication configuration is found, it returns nil.
-func (i *KRMInput) GetRemoteAuth(sel *types.Selector, items []*kyaml.RNode) (*auth.Credential, error) {
+// GetRemoteClient returns a remote client based on the remote module configuration.
+// If no authentication configuration is found, it returns nil. A nil client is a valid value,
+// check the error return value for actual errors.
+func (i *KRMInput) GetRemoteClient(items []*kyaml.RNode) (*auth.Client, error) {
 	var secret *corev1.Secret
 	var err error
 	if i.RemoteModule.Auth != nil {
@@ -75,7 +76,18 @@ func (i *KRMInput) GetRemoteAuth(sel *types.Selector, items []*kyaml.RNode) (*au
 		}
 	}
 
-	return registryauth.ConfigureAuth(secret, items)
+	creds, err := registryauth.ConfigureAuth(secret, items)
+	if err != nil {
+		return nil, fmt.Errorf("failed to configure auth: %w", err)
+	}
+
+	if creds == nil {
+		return nil, nil
+	}
+
+	return &auth.Client{
+		Credential: auth.StaticCredential(i.RemoteModule.Registry, *creds),
+	}, nil
 }
 
 // ItemMatchReference checks if the given item matches the provided selector.
