@@ -55,6 +55,14 @@ func (m *Cuestomize) BuildAndPublish(
 	// +default=false
 	alsoTagAsLatest bool,
 ) error {
+	// lint
+	_, err := m.GolangciLintRun(ctx, buildContext, GolangciLintDefaultVersion, "5m")
+
+	// tests
+	if err := m.RunTests(ctx, buildContext); err != nil {
+		return err
+	}
+
 	// Publish stage: push the built image to a registry
 	container, err := m.Build(ctx, buildContext)
 	if err != nil {
