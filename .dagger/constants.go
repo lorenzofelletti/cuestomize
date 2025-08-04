@@ -6,6 +6,9 @@ const (
 	GolangImage           = "golang:1.24"
 	RegistryImage         = "registry:2"
 	DistrolessStaticImage = "gcr.io/distroless/static:latest"
+
+	GolangciLintDefaultVersion = "v2.1.6"
+	GolangciLingImageFmt       = "golangci/golangci-lint:%s-alpine"
 )
 
 var (
