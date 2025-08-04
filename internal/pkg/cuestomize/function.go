@@ -59,8 +59,9 @@ func newCuestomizeFunctionWithPath(config *api.KRMInput, resourcesPath *string) 
 		ctx := cuecontext.New()
 
 		if config.RemoteModule != nil {
+			log.Debug().Msg("fetching CUE model from OCI registry")
 			if err := oci.FetchFromRegistry(context.TODO(), config, items, *resourcesPath); err != nil {
-				return nil, fmt.Errorf("failed to pull from OCI registry: %w", err)
+				return nil, fmt.Errorf("failed to fetch from OCI registry: %w", err)
 			}
 		}
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Workday/cuestomize/api"
 	"github.com/Workday/cuestomize/internal/pkg/fetcher"
+	"github.com/rs/zerolog/log"
 	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
@@ -15,6 +16,13 @@ func FetchFromRegistry(ctx context.Context, config *api.KRMInput, items []*kyaml
 	if err != nil {
 		return fmt.Errorf("failed to configure remote client: %w", err)
 	}
+
+	log.Debug().Str("registry", config.RemoteModule.Registry).
+		Str("repo", config.RemoteModule.Repo).
+		Str("tag", config.RemoteModule.Tag).
+		Bool("plainHTTP", config.RemoteModule.PlainHTTP).
+		Msg("fetching from OCI registry")
+
 	if err := fetcher.FetchFromOCIRegistry(
 		context.TODO(),
 		client,

@@ -76,18 +76,7 @@ func (i *KRMInput) GetRemoteClient(items []*kyaml.RNode) (*auth.Client, error) {
 		}
 	}
 
-	creds, err := registryauth.ConfigureAuth(secret, items)
-	if err != nil {
-		return nil, fmt.Errorf("failed to configure auth: %w", err)
-	}
-
-	if creds == nil {
-		return nil, nil
-	}
-
-	return &auth.Client{
-		Credential: auth.StaticCredential(i.RemoteModule.Registry, *creds),
-	}, nil
+	return registryauth.ConfigureClient(i.RemoteModule.Registry, secret)
 }
 
 // ItemMatchReference checks if the given item matches the provided selector.
