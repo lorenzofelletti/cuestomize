@@ -26,7 +26,6 @@ func (m *Cuestomize) Build(
 	// +defaultPath=./
 	buildContext *dagger.Directory,
 ) (*dagger.Container, error) {
-
 	// Build stage: compile the Go binary
 	builder := repoBaseContainer(buildContext).
 		WithEnvVariable("CGO_ENABLED", "0").
@@ -36,6 +35,7 @@ func (m *Cuestomize) Build(
 	// Final stage: create the runtime container with distroless
 	container := dag.Container().
 		From(DistrolessStaticImage).
+		WithDirectory("/cue-resources", dag.Directory(), dagger.ContainerWithDirectoryOpts{Owner: "nobody"}).
 		WithFile("/usr/local/bin/cuestomize", builder.File("/workspace/cuestomize")).
 		WithEntrypoint([]string{"/usr/local/bin/cuestomize"})
 
