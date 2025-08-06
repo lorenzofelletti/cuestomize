@@ -76,10 +76,11 @@ func (m *Cuestomize) E2E_Test(
 	buildContext *dagger.Directory,
 ) error {
 	// build cuestomize
-	cuestomize, err := m.Build(ctx, buildContext)
+	cuestomize, err := cuestomizeBuilderContainer(buildContext).Sync(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to build cuestomize: %w", err)
 	}
+	cuestomizeBinary := cuestomize.File("/workspace/cuestomize")
 
 	testdataDir := buildContext.Directory("e2e/testdata")
 
@@ -89,62 +90,6 @@ func (m *Cuestomize) E2E_Test(
 		return fmt.Errorf("failed to start registry service: %w", err)
 	}
 	defer registryService.Stop(ctx)
-
-	// push cuestomize to registry
-	// execOpts := dagger.ContainerWithExecOpts{
-	// 	InsecureRootCapabilities: true,
-	// }
-	certCache := dag.CacheVolume("node")
-	dockerState := dag.CacheVolume("docker-state")
-
-	// create the container with Dind with the docker daemon we will be using
-	// dockerCertsCA := dag.CacheVolume("docker-certs-ca")
-	// dockerCertsClient := dag.CacheVolume("docker-certs-client")
-
-	// docker, err := dag.Container().
-	// 	From("docker:dind").
-	// 	// From("docker:23.0.4-dind-rootless").
-	// 	WithMountedCache("/certs/ca", dockerCertsCA, dagger.ContainerWithMountedCacheOpts{
-	// 		Owner: "nobody",
-	// 	}).
-	// 	WithMountedCache("/certs/client", dockerCertsClient).
-	// 	WithEnvVariable("DOCKER_TLS_CERTDIR", "/certs").
-	// 	WithExec(nil, dagger.ContainerWithExecOpts{
-	// 		InsecureRootCapabilities: true,
-	// 		UseEntrypoint:            true,
-	// 	}).
-	// 	WithExposedPort(2376).AsService().Start(ctx)
-	docker, err := dag.Container().
-		From("docker:dind").
-		WithExposedPort(2376).
-		WithMountedCache("/var/lib/docker", dockerState, dagger.ContainerWithMountedCacheOpts{
-			Sharing: dagger.CacheSharingModePrivate,
-		}).
-		WithMountedCache("/certs", certCache).
-		AsService(dagger.ContainerAsServiceOpts{
-			UseEntrypoint:            true,
-			InsecureRootCapabilities: true,
-		}).
-		Start(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to start docker service: %w", err)
-	}
-	defer docker.Stop(ctx)
-	customizeTar := cuestomize.AsTarball()
-	if _, err := dag.Container().From("docker:latest").WithFile("/cuestomize.tar", customizeTar).
-		WithServiceBinding("docker", docker).
-		WithServiceBinding("registry", registryService).
-		WithMountedCache("/certs", certCache).
-		WithEnvVariable("DOCKER_HOST", "tcp://docker:2376").
-		WithEnvVariable("DOCKER_TLS_CERTDIR", "/certs").
-		WithEnvVariable("DOCKER_CERT_PATH", "/certs/client").
-		WithEnvVariable("DOCKER_TLS_VERIFY", "1").
-		WithExec([]string{"docker", "load", "-i", "/cuestomize.tar"}).
-		WithExec([]string{"docker", "tag", "cuestomize", "registry:5000/cuestomize:latest"}).
-		WithExec([]string{"docker", "push", "registry:5000/cuestomize:latest"}).
-		Sync(ctx); err != nil {
-		return fmt.Errorf("failed to push cuestomize to registry: %w", err)
-	}
 
 	// setup registryWithAuth with authentication
 	username := "registryuser"
@@ -161,22 +106,25 @@ func (m *Cuestomize) E2E_Test(
 		WithServiceBinding("registry_auth", registryWithAuthService).
 		WithEnvVariable(shared.RegistryHostVarName, "registry:5000").
 		WithEnvVariable(shared.RegistryAuthHostVarName, "registry_auth:5000").
+		WithEnvVariable(shared.RegistryUsernameVarName, username).
+		WithEnvVariable(shared.RegistryPasswordVarName, password).
 		WithExec([]string{"go", "run", "./e2e/main.go"}).Sync(ctx); err != nil {
 		return fmt.Errorf("failed to run e2e tests: %w", err)
 	}
 
 	// run e2e tests
 	// TODO: save output to file and extract it for comparison
-	kustomize, err := dag.Container().From("registry.k8s.io/kustomize/kustomize:v5.6.0").
+	kustomize := dag.Container().From("registry.k8s.io/kustomize/kustomize:v5.6.0").
 		WithServiceBinding("registry", registryService).
 		WithServiceBinding("registry_auth", registryWithAuthService).
 		WithDirectory("/testdata", testdataDir).
+		WithFile("/bin/cuestomize", cuestomizeBinary).
+		WithDirectory("/cue-resources", dag.Directory()).
 		WithNewFile(
 			"/testdata/kustomize-auth/.env.secret",
 			fmt.Sprintf(e2eCredSecretContentFmt, username, password),
-		).
-		WithExec([]string{"kustomize", "build", "--enable-alpha-plugins", "--network", "/testdata/kustomize"}).Sync(ctx)
-	if err != nil {
+		)
+	if _, err := kustomize.WithExec([]string{"kustomize", "build", "--enable-alpha-plugins", "--network", "/testdata/kustomize"}).Sync(ctx); err != nil {
 		return fmt.Errorf("kustomize with no auth e2e failed: %w", err)
 	}
 
