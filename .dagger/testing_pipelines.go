@@ -101,20 +101,15 @@ func (m *Cuestomize) E2E_Test(
 	defer registryWithAuthService.Stop(ctx)
 
 	// e2e setup (pushing cue module to registries)
-	if _, err := repoBaseContainer(buildContext, nil).
-		WithServiceBinding("registry", registryService).
-		WithServiceBinding("registry_auth", registryWithAuthService).
-		WithEnvVariable(shared.RegistryHostVarName, "registry:5000").
-		WithEnvVariable(shared.RegistryAuthHostVarName, "registry_auth:5000").
-		WithEnvVariable(shared.RegistryUsernameVarName, username).
-		WithEnvVariable(shared.RegistryPasswordVarName, password).
+	if _, err := testContainerWithRegistryServices(
+		buildContext, registryService, registryWithAuthService, username, password).
 		WithExec([]string{"go", "run", "./e2e/main.go"}).Sync(ctx); err != nil {
 		return fmt.Errorf("failed to run e2e tests: %w", err)
 	}
 
 	// run e2e tests
 	// TODO: save output to file and extract it for comparison
-	kustomize := dag.Container().From("registry.k8s.io/kustomize/kustomize:v5.6.0").
+	kustomize := dag.Container().From(KustomizeImage).
 		WithServiceBinding("registry", registryService).
 		WithServiceBinding("registry_auth", registryWithAuthService).
 		WithDirectory("/testdata", testdataDir).
@@ -167,6 +162,7 @@ func setupRegistryServiceWithAuth(ctx context.Context, username, password string
 	return registryWithAuth.AsService().Start(ctx)
 }
 
+// testContainerWithRegistryServices returns a repoBaseContainer with registry and registry_auth services bound.
 func testContainerWithRegistryServices(buildContext *dagger.Directory, registryService, registryWithAuthService *dagger.Service, username, password string) *dagger.Container {
 	return repoBaseContainer(buildContext, nil).
 		WithServiceBinding("registry", registryService).

@@ -73,6 +73,8 @@ func (m *Cuestomize) BuildAndPublish(
 	return nil
 }
 
+// repoBaseContainer creates a container with the repository files in it and go dependencies installed.
+// The working directory is set to `/workspace` and contains the root of the repository.
 func repoBaseContainer(buildContext *dagger.Directory, excludedOpts *dagger.ContainerWithDirectoryOpts) *dagger.Container {
 	var exOpts dagger.ContainerWithDirectoryOpts
 	if excludedOpts == nil {
@@ -90,6 +92,7 @@ func repoBaseContainer(buildContext *dagger.Directory, excludedOpts *dagger.Cont
 		WithDirectory("/workspace", buildContext, exOpts)
 }
 
+// cuestomizeBuilderContainer returns a container that can be used to build the cuestomize binary.
 func cuestomizeBuilderContainer(buildContext *dagger.Directory) *dagger.Container {
 	return repoBaseContainer(buildContext, nil).
 		WithEnvVariable("CGO_ENABLED", "0").
