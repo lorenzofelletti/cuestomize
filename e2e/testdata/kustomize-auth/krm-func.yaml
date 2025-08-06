@@ -4,11 +4,10 @@ metadata:
   name: example
   annotations:
     config.kubernetes.io/local-config: "true"
-    #    envs: ["LOG_LEVEL", "REGISTRY_USERNAME", "REGISTRY_PASSWORD"]
     config.kubernetes.io/function: |
       container:
-        image: ghcr.io/lorenzofelletti/cuestomize:v0.1.0-dev-003
-        envs: ["LOG_LEVEL"]
+        image: registry:5000/lorenzofelletti/cuestomize:latest
+        envs: ["LOG_LEVEL=debug"]
         network: true
 input:
   configMapName: example-configmap
