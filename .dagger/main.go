@@ -27,7 +27,7 @@ func (m *Cuestomize) Build(
 	buildContext *dagger.Directory,
 ) (*dagger.Container, error) {
 	// Build stage: compile the Go binary
-	builder := repoBaseContainer(buildContext).
+	builder := repoBaseContainer(buildContext, nil).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GO111MODULE", "on").
 		WithExec([]string{"go", "build", "-o", "cuestomize", "main.go"})
@@ -76,13 +76,19 @@ func (m *Cuestomize) BuildAndPublish(
 	return nil
 }
 
-func repoBaseContainer(buildContext *dagger.Directory) *dagger.Container {
+func repoBaseContainer(buildContext *dagger.Directory, excludedOpts *dagger.ContainerWithDirectoryOpts) *dagger.Container {
+	var exOpts dagger.ContainerWithDirectoryOpts
+	if excludedOpts == nil {
+		exOpts = DefaultExcludedOpts
+	}
 	// Create a container to run the tests
 	return dag.Container().
 		From(GolangImage).
 		WithWorkdir("/workspace").
 		WithFile("/workspace/go.mod", buildContext.File("go.mod")).
 		WithFile("/workspace/go.sum", buildContext.File("go.sum")).
+		WithFile("/workspace/.dagger/go.mod", buildContext.File(".dagger/go.mod")).
+		WithFile("/workspace/.dagger/go.sum", buildContext.File(".dagger/go.sum")).
 		WithExec([]string{"go", "mod", "download"}).
-		WithDirectory("/workspace", buildContext, DefaultExcludedOpts)
+		WithDirectory("/workspace", buildContext, exOpts)
 }

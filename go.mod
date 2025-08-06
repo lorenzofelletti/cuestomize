@@ -1,8 +1,9 @@
 module github.com/Workday/cuestomize
 
-go 1.24.0
+go 1.24.4
 
 require (
+	"dagger/cuestomize" v0.0.0
 	cuelang.org/go v0.13.2
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
@@ -70,3 +71,5 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 )
+
+replace dagger/cuestomize => ./.dagger
