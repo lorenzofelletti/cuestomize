@@ -1,0 +1,50 @@
+name: CI (Dagger)
+
+on:
+  pull_request:
+
+jobs:
+  lint:
+    name: Golangci-lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run pipeline
+        uses: dagger/dagger-for-github@8.0.0
+        with:
+          version: "0.18.14"
+          verb: call
+          args: golangci-lint-run
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run pipeline
+        uses: dagger/dagger-for-github@8.0.0
+        with:
+          version: "0.18.14"
+          verb: call
+          args: run-tests
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build image
+        uses: dagger/dagger-for-github@8.0.0
+        with:
+          version: "0.18.14"
+          verb: call
+          args: build
