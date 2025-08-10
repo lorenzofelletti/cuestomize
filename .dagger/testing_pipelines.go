@@ -9,8 +9,8 @@ import (
 
 const (
 	e2eCredSecretContentFmt = `
-export username=%s
-export password=%s
+username=%s
+password=%s
 `
 )
 
@@ -119,11 +119,11 @@ func (m *Cuestomize) E2E_Test(
 			"/testdata/kustomize-auth/.env.secret",
 			fmt.Sprintf(e2eCredSecretContentFmt, username, password),
 		)
-	if _, err := kustomize.WithExec([]string{"kustomize", "build", "--enable-alpha-plugins", "--network", "/testdata/kustomize"}).Sync(ctx); err != nil {
+	if _, err := kustomize.WithExec([]string{"kustomize", "build", "--enable-alpha-plugins", "--network", "--enable-exec", "/testdata/kustomize"}).Sync(ctx); err != nil {
 		return fmt.Errorf("kustomize with no auth e2e failed: %w", err)
 	}
 
-	if _, err := kustomize.WithExec([]string{"kustomize", "build", "--enable-alpha-plugins", "--network", "/testdata/kustomize-auth"}).Sync(ctx); err != nil {
+	if _, err := kustomize.WithExec([]string{"kustomize", "build", "--enable-alpha-plugins", "--network", "--enable-exec", "/testdata/kustomize-auth"}).Sync(ctx); err != nil {
 		return fmt.Errorf("kustomize with auth e2e failed: %w", err)
 	}
 

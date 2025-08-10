@@ -20,9 +20,7 @@ includes:
   name: example-service
   namespace: example-namespace
 remoteModule:
-  registry: ghcr.io
-  repo: lorenzofelletti/cuestomize/cuemodules/cuestomize-examples-simple
+  registry: registry:5000
+  repo: sample-module
   tag: latest
-  auth:
-    kind: Secret
-    name: regcred
+  plainHTTP: true
