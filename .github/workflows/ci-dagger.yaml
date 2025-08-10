@@ -33,6 +33,21 @@ jobs:
           version: "0.18.14"
           verb: call
           args: run-tests
+  
+  e2e-test:
+    name: E2E Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run pipeline
+        uses: dagger/dagger-for-github@8.0.0
+        with:
+          version: "0.18.14"
+          verb: call
+          args: e-2-e-test
 
   build:
     name: Build
