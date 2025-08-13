@@ -59,19 +59,32 @@ func (m *Cuestomize) BuildAndPublish(
 		}
 	}
 
-	// Publish stage: push the built image to a registry
-	container, err := m.Build(ctx, buildContext, "")
-	if err != nil {
-		return err
+	if len(platforms) == 0 {
+		platform, err := dag.DefaultPlatform(ctx)
+		if err != nil {
+			return err
+		}
+		platforms = append(platforms, string(platform))
 	}
-	container = container.WithRegistryAuth(registry, username, password)
+
+	platformVariants := make([]*dagger.Container, 0, len(platforms))
+	for _, platform := range platforms {
+		container, err := m.Build(ctx, buildContext, string(platform))
+		if err != nil {
+			return err
+		}
+		platformVariants = append(platformVariants, container)
+	}
 
 	tags := []string{tag}
 	if alsoTagAsLatest {
 		tags = append(tags, "latest")
 	}
 	for _, t := range tags {
-		_, err := container.Publish(ctx, registry+"/"+repository+":"+t)
+		_, err := dag.Container().WithRegistryAuth(registry, username, password).
+			Publish(ctx, registry+"/"+repository+":"+t, dagger.ContainerPublishOpts{
+				PlatformVariants: platformVariants,
+			})
 		if err != nil {
 			return err
 		}
