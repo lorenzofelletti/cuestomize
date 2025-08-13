@@ -9,15 +9,16 @@ func (m *Cuestomize) Build(
 	ctx context.Context,
 	// +defaultPath=./
 	buildContext *dagger.Directory,
-	// +default=[]
-	platforms []string,
+	// +default=""
+	platform string,
 ) (*dagger.Container, error) {
-	// if len(platforms) > 0 {
-	// 	// Build for specific platforms
-	// }
+	containerOpts := dagger.ContainerOpts{}
+	if platform != "" {
+		containerOpts.Platform = dagger.Platform(platform)
+	}
 
 	// Build stage: compile the Go binary
-	builder := cuestomizeBuilderContainer(buildContext)
+	builder := cuestomizeBuilderContainer(buildContext, containerOpts)
 
 	// Final stage: create the runtime container with distroless
 	container := dag.Container().
@@ -59,7 +60,7 @@ func (m *Cuestomize) BuildAndPublish(
 	}
 
 	// Publish stage: push the built image to a registry
-	container, err := m.Build(ctx, buildContext, platforms)
+	container, err := m.Build(ctx, buildContext, "")
 	if err != nil {
 		return err
 	}

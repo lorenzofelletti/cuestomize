@@ -22,13 +22,14 @@ type Cuestomize struct{}
 
 // repoBaseContainer creates a container with the repository files in it and go dependencies installed.
 // The working directory is set to `/workspace` and contains the root of the repository.
-func repoBaseContainer(buildContext *dagger.Directory, excludedOpts *dagger.ContainerWithDirectoryOpts) *dagger.Container {
+func repoBaseContainer(buildContext *dagger.Directory, excludedOpts *dagger.ContainerWithDirectoryOpts, containerOpts ...dagger.ContainerOpts) *dagger.Container {
 	var exOpts dagger.ContainerWithDirectoryOpts
 	if excludedOpts == nil {
 		exOpts = DefaultExcludedOpts
 	}
+
 	// Create a container to run the tests
-	return dag.Container().
+	return dag.Container(containerOpts...).
 		From(GolangImage).
 		WithWorkdir("/workspace").
 		WithFile("/workspace/go.mod", buildContext.File("go.mod")).
@@ -40,8 +41,8 @@ func repoBaseContainer(buildContext *dagger.Directory, excludedOpts *dagger.Cont
 }
 
 // cuestomizeBuilderContainer returns a container that can be used to build the cuestomize binary.
-func cuestomizeBuilderContainer(buildContext *dagger.Directory) *dagger.Container {
-	return repoBaseContainer(buildContext, nil).
+func cuestomizeBuilderContainer(buildContext *dagger.Directory, containerOpts ...dagger.ContainerOpts) *dagger.Container {
+	return repoBaseContainer(buildContext, nil, containerOpts...).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GO111MODULE", "on").
 		WithExec([]string{"go", "build", "-o", "cuestomize", "main.go"})
