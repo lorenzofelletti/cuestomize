@@ -21,7 +21,7 @@ func (m *Cuestomize) Build(
 	builder := cuestomizeBuilderContainer(buildContext, containerOpts)
 
 	// Final stage: create the runtime container with distroless
-	container := dag.Container(containerOpts).
+	container := dag.Container().
 		From(DistrolessStaticImage).
 		WithDirectory("/cue-resources", dag.Directory(), dagger.ContainerWithDirectoryOpts{Owner: "nobody"}).
 		WithFile("/usr/local/bin/cuestomize", builder.File("/workspace/cuestomize")).
