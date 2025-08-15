@@ -47,6 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    needs: prep
 
     steps:
     - name: Checkout repository
@@ -70,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    needs: prep
 
     steps:
     - name: Checkout repository
