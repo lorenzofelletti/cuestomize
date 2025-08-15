@@ -29,43 +29,40 @@ func (m *Cuestomize) PublishExamples(
 	// +default=[]
 	platforms []string,
 	latest bool,
-) error {
-	container, err := repoBaseContainer(buildContext, nil).
-		WithExec([]string{"go", "generate", "./..."}).Sync(ctx)
-	if err != nil {
-		return err
-	}
+) ([]string, error) {
+
+	container := m.GoGenerate(ctx, buildContext)
 
 	examplesDir := container.Directory("/workspace/examples")
 
 	tempDir, err := os.MkdirTemp("", "examples")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer os.RemoveAll(tempDir)
 
 	if _, err := examplesDir.Export(ctx, tempDir); err != nil {
-		return err
+		return nil, err
 	}
 
 	entries, err := os.ReadDir(tempDir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	repositoryDirMap := make(map[string]string)
 
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		if !entry.IsDir() || entry.Name() == "*" {
 			continue
 		}
-		repoName := repositoryPrefix + "/" + entry.Name()
+		repoName := registry + "/" + repositoryPrefix + "-" + entry.Name()
 		repositoryDirMap[repoName] = path.Join(tempDir, entry.Name())
 	}
 
 	pwd, err := password.Plaintext(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tags := []string{tag}
@@ -73,6 +70,7 @@ func (m *Cuestomize) PublishExamples(
 		tags = append(tags, "latest")
 	}
 
+	pushedRefs := make([]string, 0, len(repositoryDirMap)*len(tags))
 	for repoName, dir := range repositoryDirMap {
 		for _, t := range tags {
 			_, err := oci.PushDirectoryToOCIRegistry(ctx, repoName, dir, CueModuleArtifactType, t, &auth.Client{
@@ -82,10 +80,11 @@ func (m *Cuestomize) PublishExamples(
 				}),
 			})
 			if err != nil {
-				return fmt.Errorf("failed to push %s to OCI registry: %w", repoName, err)
+				return nil, fmt.Errorf("failed to push %s to OCI registry: %w", repoName, err)
 			}
+			pushedRefs = append(pushedRefs, fmt.Sprintf("%s:%s", repoName, t))
 		}
 	}
 
-	return nil
+	return pushedRefs, nil
 }

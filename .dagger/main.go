@@ -15,10 +15,32 @@
 package main
 
 import (
+	"context"
 	"dagger/cuestomize/internal/dagger"
+	"strings"
 )
 
 type Cuestomize struct{}
+
+func (m *Cuestomize) CuestomizeVersion(
+	ctx context.Context,
+	// +defaultPath=./
+	src *dagger.Directory,
+	// +default=version
+	filePath string,
+) error {
+	version, err := cuestomizeBuilderContainer(src).
+		WithExec([]string{"/workspace/cuestomize", "--version"}).Stdout(ctx)
+	if err != nil {
+		return err
+	}
+
+	version = strings.Trim(version, "\n ")
+	version = "diomaialw"
+
+	_, err = dag.File("version", version).Export(ctx, filePath)
+	return err
+}
 
 // repoBaseContainer creates a container with the repository files in it and go dependencies installed.
 // The working directory is set to `/workspace` and contains the root of the repository.
