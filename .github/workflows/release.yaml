@@ -34,7 +34,6 @@ jobs:
 
     # only tag as latest if the release is set to latest
     - name: set tag as latest
-      # if: "!github.event.release.prerelease"
       run: |
         if [ "${{ github.event.release.prerelease }}" == "false" ]; then
           echo -n 'latest=true' >> $GITHUB_OUTPUT
