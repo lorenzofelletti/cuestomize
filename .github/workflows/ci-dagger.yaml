@@ -33,7 +33,7 @@ jobs:
       with:
         version: "0.18.14"
         verb: call
-        args: run-tests
+        args: test-with-coverage
 
   e2e-test:
     name: E2E Test
