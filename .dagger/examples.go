@@ -20,12 +20,11 @@ func (m *Cuestomize) PublishExamples(
 	registry string,
 	// +default="workday/cuestomize/cuemodules/cuestomize-examples"
 	repositoryPrefix string,
+	// +default="latest"
 	tag string,
-	// +default=[]
-	platforms []string,
+	// +optional
 	latest bool,
 ) (*dagger.Container, error) {
-
 	container := m.GoGenerate(ctx, buildContext)
 
 	latestStr := "false"
