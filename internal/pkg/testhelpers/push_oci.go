@@ -9,10 +9,10 @@ import (
 	"dagger/cuestomize/shared/oci"
 )
 
-func PushDirectoryToOCIRegistry_T(t *testing.T, reference, rootDirectory, artifactType, tag string, client remote.Client) ocispec.Descriptor {
+func PushDirectoryToOCIRegistry_T(t *testing.T, reference, rootDirectory, artifactType, tag string, client remote.Client, plainHTTP bool) ocispec.Descriptor {
 	t.Helper()
 
-	descriptor, err := oci.PushDirectoryToOCIRegistry(t.Context(), reference, rootDirectory, artifactType, tag, client)
+	descriptor, err := oci.PushDirectoryToOCIRegistry(t.Context(), reference, rootDirectory, artifactType, tag, client, plainHTTP)
 	if err != nil {
 		t.Fatalf("Failed to push directory to OCI registry: %v", err)
 	}

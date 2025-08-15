@@ -31,8 +31,10 @@ func main() {
 	tag := "latest"
 	artifactType := "application/vnd.cuestomize.module.v1+json"
 
+	plainHTTP := true
+
 	// push to registry with no authentication
-	if _, err := oci.PushDirectoryToOCIRegistry(ctx, registryNoAuthHost+"/sample-module:"+tag, "e2e/testdata/cue", artifactType, tag, nil); err != nil {
+	if _, err := oci.PushDirectoryToOCIRegistry(ctx, registryNoAuthHost+"/sample-module:"+tag, "e2e/testdata/cue", artifactType, tag, nil, plainHTTP); err != nil {
 		panic(err)
 	}
 
@@ -42,7 +44,7 @@ func main() {
 			Username: username,
 			Password: password,
 		}),
-	}); err != nil {
+	}, plainHTTP); err != nil {
 		panic(err)
 	}
 }

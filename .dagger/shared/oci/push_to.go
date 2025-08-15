@@ -14,7 +14,7 @@ import (
 
 // PushDirectoryToOCIRegistry walks a local directory, packs its contents into an
 // OCI artifact, and pushes it to a remote repository.
-func PushDirectoryToOCIRegistry(ctx context.Context, reference, rootDirectory, artifactType, tag string, client remote.Client) (ocispec.Descriptor, error) {
+func PushDirectoryToOCIRegistry(ctx context.Context, reference, rootDirectory, artifactType, tag string, client remote.Client, plainHTTP bool) (ocispec.Descriptor, error) {
 	repo, err := remote.NewRepository(reference)
 	if err != nil {
 		return ocispec.Descriptor{}, fmt.Errorf("failed to create repository: %w", err)
@@ -22,7 +22,7 @@ func PushDirectoryToOCIRegistry(ctx context.Context, reference, rootDirectory, a
 	if client != nil {
 		repo.Client = client
 	}
-	repo.PlainHTTP = true // Use plain HTTP for local testing; set to false for production
+	repo.PlainHTTP = plainHTTP
 
 	// creates an in-memory store
 	fileStore, err := file.New("")
