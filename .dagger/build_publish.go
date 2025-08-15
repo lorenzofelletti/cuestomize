@@ -61,7 +61,6 @@ func (m *Cuestomize) BuildAndPublish(
 
 	if len(platforms) == 0 {
 		platform, err := dag.DefaultPlatform(ctx)
-		dag.Directory().Terminal()
 		if err != nil {
 			return err
 		}
