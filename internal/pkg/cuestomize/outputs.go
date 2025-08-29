@@ -18,13 +18,9 @@ func processOutputs(unified cue.Value, items []*kyaml.RNode) ([]*kyaml.RNode, er
 	} else if outputsValue.Err() != nil {
 		return nil, cuerrors.ErrorWithDetails(outputsValue.Err(), "failed to lookup '%s' in unified CUE instance", OutputsPath)
 	}
-	outputsIter, len, err := getIter(outputsValue)
+	outputsIter, err := getIter(outputsValue)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get iterator over '%s' in unified CUE instance: %v", OutputsPath, err)
-	}
-
-	if len == 0 {
-		return items, nil
 	}
 
 	for outputsIter.Next() {
@@ -42,27 +38,19 @@ func processOutputs(unified cue.Value, items []*kyaml.RNode) ([]*kyaml.RNode, er
 	return items, nil
 }
 
-// getIter returns a cue.Iterator over a cue.Value of kind list or struct, and its length.
+// getIter returns a cue.Iterator over a cue.Value of kind list or struct.
 // It returns an error if the value is not a list nor a struct.
-func getIter(value cue.Value) (*cue.Iterator, int64, error) {
+func getIter(value cue.Value) (*cue.Iterator, error) {
 	kind := value.Kind()
 	switch kind {
 	case cue.ListKind:
-		length, err := value.Len().Int64()
-		if err != nil {
-			return nil, 0, fmt.Errorf("unexpected error getting length of list: %w", err)
-		}
 		iter, _ := value.List()
-		return &iter, length, nil
+		return &iter, nil
 	case cue.StructKind:
-		length, err := value.Len().Int64()
-		if err != nil {
-			return nil, 0, fmt.Errorf("unexpected error getting length of struct: %w", err)
-		}
 		iter, _ := value.Fields()
-		return iter, length, nil
+		return iter, nil
 	default:
-		return nil, 0, fmt.Errorf("value is not a list nor a struct, got: %s", kind)
+		return nil, fmt.Errorf("value is not a list nor a struct, got: %s", kind)
 	}
 }
 
