@@ -30,16 +30,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	tempDir, err := os.MkdirTemp("", "cuestomize-cli-")
+	if err != nil {
+		log.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
 	// This is the KRM function processor for the root command.
 	config := new(api.KRMInput)
-	fn, err := krm.NewBuilder().SetConfig(config).Build()
+	fn, err := krm.NewBuilder().SetConfig(config).SetResourcesPath(tempDir).Build()
 	if err != nil {
 		log.Fatalf("failed to build KRM function: %v", err)
 	}
 	p := processor.NewSimpleProcessor(config, kio.FilterFunc(fn), true)
 
 	// rootCmd is the command that runs as a KRM function.
-	rootCmd := command.Build(p, command.StandaloneDisabled, false)
+	rootCmd := command.Build(p, command.StandaloneEnabled, false)
 	rootCmd.Version = Version
 	rootCmd.SetVersionTemplate("v{{.Version}}")
 

@@ -28,7 +28,7 @@ func NewCLICommand() *cobra.Command {
 		Short: "Run Cuestomize as a CLI tool",
 		Long:  "Run Cuestomize as a standalone CLI tool, reading resources from stdin and configuration from a file.",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if configPath != "" && !(validateOnly || module != "" || includeAll) {
+			if configPath != "" && (validateOnly || module != "" || includeAll) {
 				return fmt.Errorf("--config cannot be used with --validate-only, --module, or --include-all")
 			}
 			if configPath == "" && module == "" {
@@ -74,17 +74,17 @@ func NewCLICommand() *cobra.Command {
 							{ResId: resid.ResId{Gvk: resid.Gvk{Group: ".*", Version: ".*", Kind: ".*"}}},
 						}
 					}
-
-					tempDir, err := os.MkdirTemp("", "cuestomize-cli-")
-					if err != nil {
-						return fmt.Errorf("failed to create temp dir: %w", err)
-					}
-					defer os.RemoveAll(tempDir)
-					builder.SetResourcesPath(tempDir)
 				default:
 					return fmt.Errorf("failed to stat module: %w", err)
 				}
 			}
+
+			tempDir, err := os.MkdirTemp("", "cuestomize-cli-")
+			if err != nil {
+				return fmt.Errorf("failed to create temp dir: %w", err)
+			}
+			defer os.RemoveAll(tempDir)
+			builder.SetResourcesPath(tempDir)
 
 			fn, err := builder.Build()
 			if err != nil {
