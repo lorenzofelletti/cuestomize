@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/Workday/cuestomize/api"
 	krm "github.com/Workday/cuestomize/internal/pkg/cuestomize"
 	"github.com/Workday/cuestomize/internal/pkg/processor"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	"sigs.k8s.io/kustomize/kyaml/kio"
+	"sigs.k8s.io/kustomize/kyaml/resid"
 	"sigs.k8s.io/yaml"
 )
 
@@ -64,6 +65,16 @@ func NewCLICommand() *cobra.Command {
 					config.RemoteModule.Tag = "latest"
 					config.RemoteModule.PlainHTTP = plainHTTP
 
+					if validateOnly {
+						config.Annotations = map[string]string{"config.cuestomize.io/validator": "true"}
+					}
+
+					if includeAll {
+						config.Includes = []types.Selector{
+							{ResId: resid.ResId{Gvk: resid.Gvk{Group: ".*", Version: ".*", Kind: ".*"}}},
+						}
+					}
+
 					tempDir, err := os.MkdirTemp("", "cuestomize-cli-")
 					if err != nil {
 						return fmt.Errorf("failed to create temp dir: %w", err)
@@ -77,8 +88,7 @@ func NewCLICommand() *cobra.Command {
 
 			fn, err := builder.Build()
 			if err != nil {
-				// This function is called during setup, so Fatalf is ok.
-				log.Fatalf("failed to build KRM function for cli command: %v", err)
+				return fmt.Errorf("failed to build KRM function: %w", err)
 			}
 			p := processor.NewSimpleProcessor(config, kio.FilterFunc(fn), true)
 
