@@ -26,7 +26,7 @@ func ProcessOutputs(ctx context.Context, unified cue.Value, items []*kyaml.RNode
 	}
 	outputsIter, err := getIter(outputsValue)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get iterator over '%s' in unified CUE instance: %v", OutputsPath, err)
+		return nil, fmt.Errorf("failed to get iterator over '%s' in unified CUE instance: %w", OutputsPath, err)
 	}
 
 	for outputsIter.Next() {

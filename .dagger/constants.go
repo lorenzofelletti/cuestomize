@@ -10,7 +10,7 @@ const (
 	// RegistryImage is image for local container registry
 	RegistryImage = "registry:3"
 	// DistrolessStaticImage is the distroless static image
-	DistrolessStaticImage = "gcr.io/distroless/static:latest"
+	DistrolessStaticImage = "gcr.io/distroless/static:nonroot"
 	// KustomizeImage is the Kustomize image
 	KustomizeImage = "registry.k8s.io/kustomize/kustomize:v5.7.1"
 	// CuelangVersion is the version of Cuelang

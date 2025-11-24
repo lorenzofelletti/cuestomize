@@ -4,7 +4,9 @@
 package registryauth
 
 import (
+	"fmt"
 	"os"
+	"path"
 
 	corev1 "k8s.io/api/core/v1"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -24,16 +26,45 @@ const (
 // ConfigureClient configures a remote client to fetch from the specified registry, with authentication if
 // any is found.
 func ConfigureClient(registry string, authSecret *corev1.Secret) (*auth.Client, error) {
+	client := auth.DefaultClient
+
+	if authSecret != nil && authSecret.Type == corev1.SecretTypeDockerConfigJson {
+		err := copyDockerConfigJson(authSecret)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	creds, err := configureAuth(authSecret)
 	if err != nil {
 		return nil, err
 	}
 
-	client := auth.DefaultClient
 	if creds != nil {
 		client.Credential = auth.StaticCredential(registry, *creds)
 	}
 	return client, nil
+}
+
+// TODO(dev): test dockerconfigjson passing
+func copyDockerConfigJson(authSecret *corev1.Secret) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	dockerDir := path.Join(homeDir, ".docker")
+	err = os.Mkdir(dockerDir, 0755)
+	if err != nil && !os.IsExist(err) {
+		return fmt.Errorf("failed to create docker config directory: %w", err)
+	}
+
+	dockerConfigJsonPath := path.Join(dockerDir, "config.json")
+	err = os.WriteFile(dockerConfigJsonPath, authSecret.Data[corev1.DockerConfigJsonKey], 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write docker config file: %w", err)
+	}
+	return nil
 }
 
 // configureAuth configures authentication based on the provided authSecret or environment variables.
@@ -47,13 +78,13 @@ func configureAuth(authSecret *corev1.Secret) (*auth.Credential, error) {
 
 	for k, v := range authSecret.Data {
 		switch k {
-		case "username":
+		case "username", UsernameEnvVar:
 			creds.Username = string(v)
-		case "password":
+		case "password", PasswordEnvVar:
 			creds.Password = string(v)
-		case "accessToken":
+		case "accessToken", AccessTokenEnvVar:
 			creds.AccessToken = string(v)
-		case "refreshToken":
+		case "refreshToken", RefreshTokenEnvVar:
 			creds.RefreshToken = string(v)
 		}
 	}
