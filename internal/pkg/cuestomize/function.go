@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/Workday/cuestomize/api"
+	"github.com/Workday/cuestomize/pkg/cuerrors"
 	"github.com/Workday/cuestomize/pkg/cuestomize"
+	"github.com/Workday/cuestomize/pkg/cuestomize/model"
 
 	kyaml "sigs.k8s.io/kustomize/kyaml/yaml"
 )
@@ -22,6 +24,20 @@ type KRMFunction = func([]*kyaml.RNode) ([]*kyaml.RNode, error)
 // * resourcesPath: path to the directory containing the CUE resources (nil to use the default)
 func newCuestomizeFunctionWithPath(ctx context.Context, config *api.KRMInput, resourcesPath *string) KRMFunction {
 	return func(items []*kyaml.RNode) ([]*kyaml.RNode, error) {
-		return cuestomize.Cuestomize(ctx, items, config, *resourcesPath)
+		detailer := cuerrors.NewDefaultDetailer(*resourcesPath)
+		ctx = cuerrors.NewContext(ctx, detailer)
+
+		var provider model.Provider
+		if config.RemoteModule != nil {
+			ociProvider, err := model.NewOCIModelProviderFromConfigAndItems(config, items)
+			if err != nil {
+				return nil, err
+			}
+			provider = ociProvider
+		} else {
+			provider = model.NewLocalPathProvider(*resourcesPath)
+		}
+
+		return cuestomize.Cuestomize(ctx, items, config, cuestomize.WithModelProvider(provider))
 	}
 }
