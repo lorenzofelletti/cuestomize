@@ -33,4 +33,10 @@ var (
 		},
 		Gitignore: true,
 	}
+
+	LooserDirOpts = dagger.ContainerWithDirectoryOpts{
+		Exclude: []string{
+			".go-version", ".vscode", ".dagger",
+		},
+	}
 )

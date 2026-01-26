@@ -5,26 +5,42 @@ import (
 	"dagger/cuestomize/internal/dagger"
 )
 
+// Builds the Cuestomize image
 func (m *Cuestomize) Build(
 	ctx context.Context,
 	// +defaultPath=./
 	buildContext *dagger.Directory,
 	// +default=""
 	platform string,
-	// +default=""
-	ldflags string,
 ) *dagger.Container {
+
 	containerOpts := dagger.ContainerOpts{}
 	if platform != "" {
 		containerOpts.Platform = dagger.Platform(platform)
 	}
 
 	// Build stage: compile the Go binary
-	builder := cuestomizeBuilderContainer(buildContext, ldflags, containerOpts)
+	builder := m.cuestomizeBuilderContainer(buildContext, containerOpts)
+
+	// now := time.Now().UTC().Format(time.RFC3339)
+
+	distroless := dag.Container(containerOpts)
+	// distroless := dag.Container(containerOpts).
+	// 	From(DistrolessStaticImage)
+	// baseDigest, err := distroless.Rootfs().Digest(ctx)
+	// if err != nil {
+	// 	// TODO: log error
+	// }
 
 	// Final stage: create the runtime container with distroless
-	container := dag.Container(containerOpts).
-		From(DistrolessStaticImage).
+	container := distroless.
+		// WithAnnotation("org.opencontainers.image.base.name", DistrolessStaticImage).
+		// WithAnnotation("org.opencontainers.image.base.digest", baseDigest).
+		// WithAnnotation("org.opencontainers.image.created", now).
+		// WithAnnotation("/", "https://github.com/Workday/cuestomize").
+		// WithAnnotation("org.opencontainers.image.documentation", "https://workday.github.io/cuestomize/").
+		// WithAnnotation("org.opencontainers.image.title", "cuestomize").
+		// WithAnnotation("org.opencontainers.image.description", "Cuestomize KRM function. K8s package manager (and more) integrating CUE-Lang with Kustomize.").
 		WithDirectory("/cue-resources", dag.Directory(), dagger.ContainerWithDirectoryOpts{Owner: "nobody"}).
 		WithFile("/usr/local/bin/cuestomize", builder.File("/workspace/cuestomize")).
 		WithEntrypoint([]string{"/usr/local/bin/cuestomize"})
@@ -41,8 +57,6 @@ func (m *Cuestomize) BuildAndPublish(
 	// +default="ghcr.io"
 	registry string,
 	repository string,
-	// +default="-s -w"
-	ldflags string,
 	tag string,
 	// +default=false
 	alsoTagAsLatest bool,
@@ -73,7 +87,7 @@ func (m *Cuestomize) BuildAndPublish(
 
 	platformVariants := make([]*dagger.Container, 0, len(platforms))
 	for _, platform := range platforms {
-		container := m.Build(ctx, buildContext, string(platform), ldflags)
+		container := m.Build(ctx, buildContext, string(platform))
 		platformVariants = append(platformVariants, container)
 	}
 

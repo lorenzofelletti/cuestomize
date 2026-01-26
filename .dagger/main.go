@@ -6,11 +6,23 @@ import (
 	"dagger/cuestomize/internal/dagger"
 )
 
-type Cuestomize struct{}
+type Cuestomize struct {
+	ldflags string
+}
+
+// constructor
+func (m *Cuestomize) New(
+	// +default=""
+	ldflags string,
+) *Cuestomize {
+	return &Cuestomize{
+		ldflags: ldflags,
+	}
+}
 
 // repoBaseContainer creates a container with the repository files in it and go dependencies installed.
 // The working directory is set to `/workspace` and contains the root of the repository.
-func repoBaseContainer(buildContext *dagger.Directory, dirOpts *dagger.ContainerWithDirectoryOpts, containerOpts ...dagger.ContainerOpts) *dagger.Container {
+func (m *Cuestomize) repoBaseContainer(buildContext *dagger.Directory, dirOpts *dagger.ContainerWithDirectoryOpts, containerOpts ...dagger.ContainerOpts) *dagger.Container {
 	if dirOpts == nil {
 		dirOpts = &DefaultExcludedOpts
 	}
@@ -26,14 +38,14 @@ func repoBaseContainer(buildContext *dagger.Directory, dirOpts *dagger.Container
 }
 
 // cuestomizeBuilderContainer returns a container that can be used to build the cuestomize binary.
-func cuestomizeBuilderContainer(buildContext *dagger.Directory, ldflags string, containerOpts ...dagger.ContainerOpts) *dagger.Container {
+func (m *Cuestomize) cuestomizeBuilderContainer(buildContext *dagger.Directory, containerOpts ...dagger.ContainerOpts) *dagger.Container {
 	buildCmd := []string{"go", "build", "-o", "cuestomize"}
-	if ldflags != "" {
-		buildCmd = append(buildCmd, "-ldflags", ldflags)
+	if m.ldflags != "" {
+		buildCmd = append(buildCmd, "-ldflags", m.ldflags)
 	}
 	buildCmd = append(buildCmd, "main.go")
 
-	return repoBaseContainer(buildContext, nil, containerOpts...).
+	return m.repoBaseContainer(buildContext, nil, containerOpts...).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GO111MODULE", "on").
 		WithExec(buildCmd)
